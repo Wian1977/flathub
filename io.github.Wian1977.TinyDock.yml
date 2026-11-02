@@ -7,9 +7,9 @@
 # authoring environment). Open items to resolve on a machine with network +
 # flatpak-builder before opening the PR:
 #   1. runtime-version must be the LATEST GNOME runtime at submission time.
-#   2. libwnck / libXRes modules use git tags -> pin to an exact commit: and
-#      verify they build inside org.gnome.Sdk (meson; xorgproto/libX11-dev are
-#      present in the SDK).
+#   2. libwnck is built from source (tag 43.0, verified) and pinned to a commit
+#      below. libXRes is NOT a libwnck dependency (meson.build: xres required:false),
+#      so no separate module is needed. xorgproto/libX11-dev are present in the SDK.
 #   3. DONE (src/main.rs): launching now delegates to flatpak-spawn --host
 #      gtk-launch inside Flatpak (needs --talk-name=org.freedesktop.Flatpak),
 #      falling back to gio launch. Autostart self-registers
@@ -58,23 +58,22 @@ sources:
     path: io.github.Wian1977.TinyDock.svg
 
 modules:
-  - name: libxres
-    buildsystem: meson
-    sources:
-      - type: git
-        url: https://gitlab.freedesktop.org/xorg/lib/libXRes.git
-        tag: libXRes-1.2.1       # TODO: pin to a commit for reproducibility
-
+  # libwnck-3 (window state). Not in the GNOME runtime, so built from source.
+  # Verified against libwnck 43.0 meson_options.txt: gtk_doc already defaults
+  # to false; introspection is a feature (enabled/disabled/auto), not bool;
+  # the tools option is install_tools; startup_notification is a feature.
+  # libXRes is NOT a dependency (meson.build: xres required:false), so no
+  # separate module is needed.
   - name: libwnck
     buildsystem: meson
     config-opts:
-      - -Dintrospection=false
-      - -Dgtk_doc=false
-      - -Dtools=false
+      - -Dintrospection=disabled
+      - -Dinstall_tools=false
+      - -Dstartup_notification=disabled
     sources:
       - type: git
         url: https://gitlab.gnome.org/GNOME/libwnck.git
-        tag: "43.0"              # TODO: pin to a commit; 43.0 matches DEVELOPMENT.md
+        tag: "43.0"              # TODO: pin to an exact commit
 
   - name: tinydock
     buildsystem: cargo
